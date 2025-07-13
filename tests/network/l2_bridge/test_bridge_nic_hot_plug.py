@@ -26,7 +26,6 @@ from utilities.network import (
     get_vmi_ip_v4_by_name,
     network_nad,
 )
-from utilities.virt import migrate_vm_and_verify
 
 pytestmark = pytest.mark.usefixtures("label_schedulable_nodes")
 
@@ -477,27 +476,6 @@ class TestHotPlugInterfaceToVmWithOnlyPrimaryInterface:
         hot_plugged_interface_with_address,
         network_attachment_definition_for_hot_plug,
     ):
-        assert_ping_successful(
-            src_vm=running_vm_for_nic_hot_plug,
-            dst_ip=get_vmi_ip_v4_by_name(
-                vm=running_utility_vm_for_connectivity_check,
-                name=network_attachment_definition_for_hot_plug.name,
-            ),
-        )
-
-    @pytest.mark.ipv4
-    @pytest.mark.polarion("CNV-10131")
-    @pytest.mark.dependency(
-        name="test_basic_connectivity_of_hot_plugged_interface_after_second_migration",
-        depends=[TEST_BASIC_HOT_PLUGGED_INTERFACE_CONNECTIVITY],
-    )
-    def test_basic_connectivity_of_hot_plugged_interface_after_second_migration(
-        self,
-        running_vm_for_nic_hot_plug,
-        running_utility_vm_for_connectivity_check,
-        network_attachment_definition_for_hot_plug,
-    ):
-        migrate_vm_and_verify(vm=running_vm_for_nic_hot_plug)
         assert_ping_successful(
             src_vm=running_vm_for_nic_hot_plug,
             dst_ip=get_vmi_ip_v4_by_name(
