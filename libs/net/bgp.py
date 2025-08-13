@@ -2,6 +2,7 @@ import json
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Final
 
 from kubernetes.dynamic import DynamicClient
 from ocp_resources.daemonset import DaemonSet
@@ -14,21 +15,21 @@ from ocp_resources.resource import ResourceEditor, ResourceNotFoundError
 from ocp_resources.route_advertisements import RouteAdvertisements
 from timeout_sampler import retry
 
-BGP_ASN = 64512
-EXTERNAL_FRR_IMAGE = "quay.io/frrouting/frr:9.1.2"
-FRR_DEPLOYMENT_NAME = "frr-k8s-webhook-server"
-FRR_DS_NAME = "frr-k8s"
-FRR_NS_NAME = "openshift-frr-k8s"
-FRR_RESOURCES_AVAILABILITY_TIMEOUT = 120
-FRR_RESOURCES_AVAILABILITY_SLEEP = 5
+BGP_ASN: Final[int] = 64512
+EXTERNAL_FRR_IMAGE: Final[str] = "quay.io/frrouting/frr:9.1.2"
+FRR_DEPLOYMENT_NAME: Final[str] = "frr-k8s-webhook-server"
+FRR_DS_NAME: Final[str] = "frr-k8s"
+FRR_NS_NAME: Final[str] = "openshift-frr-k8s"
+FRR_RESOURCES_AVAILABILITY_TIMEOUT_SEC: Final[int] = 120
+FRR_RESOURCES_AVAILABILITY_SLEEP_SEC: Final[int] = 5
 
 
-def wait_for_frr_namespace_created() -> Namespace:
-    ns = Namespace(name=FRR_NS_NAME)
+def wait_for_frr_namespace_created(client: DynamicClient = None) -> Namespace:
+    ns = Namespace(name=FRR_NS_NAME, client=client)
 
     @retry(
-        wait_timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT,
-        sleep=FRR_RESOURCES_AVAILABILITY_SLEEP,
+        wait_timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT_SEC,
+        sleep=FRR_RESOURCES_AVAILABILITY_SLEEP_SEC,
         exceptions_dict={ResourceNotFoundError: []},
     )
     def _check_namespace_exists() -> Namespace:
@@ -39,32 +40,32 @@ def wait_for_frr_namespace_created() -> Namespace:
     return _check_namespace_exists()
 
 
-def wait_for_frr_daemonset_ready() -> bool:
-    ds = DaemonSet(name=FRR_DS_NAME, namespace=FRR_NS_NAME)
+def wait_for_frr_daemonset_ready(client: DynamicClient = None) -> bool:
+    ds = DaemonSet(name=FRR_DS_NAME, namespace=FRR_NS_NAME, client=client)
 
     @retry(
-        wait_timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT,
-        sleep=FRR_RESOURCES_AVAILABILITY_SLEEP,
+        wait_timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT_SEC,
+        sleep=FRR_RESOURCES_AVAILABILITY_SLEEP_SEC,
         exceptions_dict={ResourceNotFoundError: []},
     )
     def _check_daemonset_exists() -> bool:
         if ds.exists:
-            ds.wait_until_deployed(timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT)
+            ds.wait_until_deployed(timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT_SEC)
             return True
         raise ResourceNotFoundError(f"DaemonSet {FRR_DS_NAME} was not created.")
 
     return _check_daemonset_exists()
 
 
-def wait_for_frr_deployment_available() -> None:
-    deployment = Deployment(name=FRR_DEPLOYMENT_NAME, namespace=FRR_NS_NAME)
-    deployment.wait_for_replicas(timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT)
+def wait_for_frr_deployment_available(client: DynamicClient = None) -> None:
+    deployment = Deployment(name=FRR_DEPLOYMENT_NAME, namespace=FRR_NS_NAME, client=client)
+    deployment.wait_for_replicas(timeout=FRR_RESOURCES_AVAILABILITY_TIMEOUT_SEC)
 
 
 @contextmanager
-def enable_ra_in_network_operator(network_operator: Network) -> Generator[None]:
+def enable_ra_in_cluster_network_resource(network_resource: Network, client: DynamicClient = None) -> Generator[None]:
     patch = {
-        network_operator: {
+        network_resource: {
             "spec": {
                 "additionalRoutingCapabilities": {"providers": ["FRR"]},
                 "defaultNetwork": {"ovnKubernetesConfig": {"routeAdvertisements": "Enabled"}},
@@ -73,13 +74,14 @@ def enable_ra_in_network_operator(network_operator: Network) -> Generator[None]:
     }
 
     with ResourceEditor(patches=patch):
-        frr_ns = wait_for_frr_namespace_created()
-        wait_for_frr_daemonset_ready()
-        wait_for_frr_deployment_available()
+        frr_ns = wait_for_frr_namespace_created(client=client)
+        wait_for_frr_daemonset_ready(client=client)
+        wait_for_frr_deployment_available(client=client)
 
         yield
 
-    frr_ns.delete(wait=True)
+    if frr_ns.exists:
+        frr_ns.delete(wait=True)
 
 
 @contextmanager
@@ -169,9 +171,9 @@ def deploy_external_frr_pod(
     """
     Deploys an external FRR (Free Range Routing) pod in a specified namespace.
 
-    This function creates a privileged pod with the FRR image, attaches it to a
-    specified NetworkAttachmentDefinition (NAD), and mounts a ConfigMap for FRR
-    configuration.
+    On entering the context, this function creates a privileged pod with the FRR image,
+    attaches it to a specified NetworkAttachmentDefinition (NAD), and mounts a ConfigMap for FRR
+    configuration. On exiting the context, the pod is automatically deleted.
 
     Args:
         namespace_name (str): The name of the namespace where the pod will be deployed.
@@ -188,10 +190,10 @@ def deploy_external_frr_pod(
         ResourceNotFoundError: If the pod fails to reach the RUNNING state.
     """
     annotations = {
-        "k8s.v1.cni.cncf.io/networks": json.dumps([
+        f"{Pod.ApiGroup.K8S_V1_CNI_CNCF_IO}/networks": json.dumps([
             {"name": nad_name, "interface": "net1", "default-route": [default_route]}
         ]),
-        "k8s.v1.cni.cncf.io/default-network": "none",
+        f"{Pod.ApiGroup.K8S_V1_CNI_CNCF_IO}/default-network": "none",
     }
     containers = [
         {
