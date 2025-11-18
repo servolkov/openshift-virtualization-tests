@@ -1,11 +1,12 @@
 name: Promote net utility image to latest
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - 'closed'
     branches:
       - 'main'
+      - '123'
     paths:
       - 'containers/utility/Dockerfile'
 
