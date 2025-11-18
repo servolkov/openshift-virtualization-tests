@@ -1,6 +1,7 @@
 FROM quay.io/centos/centos:stream9
 ARG TARGETARCH
 
+
 RUN set -eux; \
     if [ "$TARGETARCH" = "s390x" ]; then \
         yum install -y yum-utils && \
