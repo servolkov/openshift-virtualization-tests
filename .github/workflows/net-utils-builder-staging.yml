@@ -15,12 +15,8 @@ jobs:
       pull-requests: write
 
     # safe to use pull_request_target because we only run this for trusted collaborators
-#    if: contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+    if: contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
     steps:
-      - name: Debug author association
-        run: |
-          echo "Author association: ${{ github.event.pull_request.author_association }}"
-
       - name: Check out repository
         uses: actions/checkout@v4
 
