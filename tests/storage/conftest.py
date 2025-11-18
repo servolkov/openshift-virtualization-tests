@@ -14,6 +14,7 @@ from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from ocp_resources.cdi import CDI
 from ocp_resources.config_map import ConfigMap
 from ocp_resources.csi_driver import CSIDriver
+from ocp_resources.data_source import DataSource
 from ocp_resources.deployment import Deployment
 from ocp_resources.exceptions import ExecOnPodError
 from ocp_resources.resource import ResourceEditor
@@ -57,13 +58,11 @@ from utilities.infra import (
     ExecCommandOnPod,
     get_artifactory_config_map,
     get_artifactory_secret,
-    is_jira_open,
 )
+from utilities.jira import is_jira_open
 from utilities.storage import (
     create_cirros_dv_for_snapshot_dict,
-    data_volume,
     get_downloaded_artifact,
-    sc_volume_binding_mode_is_wffc,
     write_file,
 )
 from utilities.virt import VirtualMachineForTests
@@ -208,12 +207,6 @@ def skip_test_if_no_hpp_sc(cluster_storage_classes):
     existing_hpp_sc = [sc.name for sc in cluster_storage_classes if sc.name in HPP_STORAGE_CLASSES]
     if not existing_hpp_sc:
         pytest.skip(f"This test runs only on one of the hpp storage classes: {HPP_STORAGE_CLASSES}")
-
-
-@pytest.fixture(scope="module")
-def skip_when_hpp_no_waitforfirstconsumer(storage_class_matrix_hpp_matrix__module__):
-    if not sc_volume_binding_mode_is_wffc(sc=[*storage_class_matrix_hpp_matrix__module__][0]):
-        pytest.skip("Test only run when volumeBindingMode is WaitForFirstConsumer")
 
 
 @pytest.fixture()
@@ -425,21 +418,6 @@ def cirros_vm_name(request):
     return request.param["vm_name"]
 
 
-@pytest.fixture(scope="module")
-def data_volume_multi_hpp_storage(
-    request,
-    namespace,
-    schedulable_nodes,
-    storage_class_matrix_hpp_matrix__module__,
-):
-    yield from data_volume(
-        request=request,
-        namespace=namespace,
-        storage_class=[*storage_class_matrix_hpp_matrix__module__][0],
-        schedulable_nodes=schedulable_nodes,
-    )
-
-
 @pytest.fixture(scope="session")
 def available_hpp_storage_class(skip_test_if_no_hpp_sc, cluster_storage_classes):
     """
@@ -605,3 +583,13 @@ def storage_class_name_immediate_binding_scope_module(storage_class_matrix_immed
 @pytest.fixture(scope="session")
 def cluster_csi_drivers_names():
     yield [csi_driver.name for csi_driver in list(CSIDriver.get())]
+
+
+@pytest.fixture(scope="module")
+def rhel10_data_source_scope_module(golden_images_namespace):
+    return DataSource(
+        namespace=golden_images_namespace.name,
+        name="rhel10",
+        client=golden_images_namespace.client,
+        ensure_exists=True,
+    )

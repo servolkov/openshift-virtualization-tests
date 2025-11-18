@@ -211,7 +211,7 @@ def migrate_and_verify_multi_vms(vm_list):
         vm_sources = vms_dict[vm.name]
         try:
             verify_vm_migrated(vm=vm, node_before=vm_sources["node_before"])
-        except (AssertionError, TimeoutExpiredError):
+        except AssertionError | TimeoutExpiredError:
             failed_migrations_list.append(vm.name)
 
     assert not failed_migrations_list, f"Some VMs failed to migrate - {failed_migrations_list}"
@@ -542,3 +542,18 @@ def get_data_volume_template_dict_with_default_storage_class(data_source: DataSo
         py_config["default_storage_class_configuration"]["access_mode"]
     ]
     return data_volume_template
+
+
+def update_hco_memory_overcommit(hco, percentage):
+    with ResourceEditorValidateHCOReconcile(
+        patches={
+            hco: {
+                "spec": {
+                    "higherWorkloadDensity": {"memoryOvercommitPercentage": percentage},
+                }
+            }
+        },
+        list_resource_reconcile=[KubeVirt],
+        wait_for_reconcile_post_update=True,
+    ):
+        yield

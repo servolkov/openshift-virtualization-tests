@@ -1,15 +1,19 @@
 import shlex
+import uuid
+from typing import Final
 
 from pyhelper_utils.shell import run_ssh_commands
 from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
+from tests.network.libs.ip import random_ipv4_address
 from utilities.constants import TIMEOUT_5SEC, TIMEOUT_30SEC
 from utilities.network import LOGGER
 from utilities.virt import VirtualMachineForTests
 
-DHCP_IP_SUBNET = "10.200.3"
-DHCP_IP_RANGE_START = f"{DHCP_IP_SUBNET}.3"
-DHCP_IP_RANGE_END = f"{DHCP_IP_SUBNET}.10"
+DHCP_IP_SUBNET: Final[str] = random_ipv4_address(net_seed=3, host_address=0).rpartition(".")[0]
+DHCP_IP_RANGE_START: Final[str] = random_ipv4_address(net_seed=3, host_address=3)
+DHCP_IP_RANGE_END: Final[str] = random_ipv4_address(net_seed=3, host_address=10)
+UNIQUE_CLIENT_ID = f"dhcp-client-id-{uuid.uuid4().hex[:16]}"
 DHCP_SERVICE_RESTART = "sudo systemctl restart dhcpd"
 DHCP_SERVER_CONF_FILE = """
 cat <<EOF >> /etc/dhcp/dhcpd.conf
@@ -29,6 +33,7 @@ subnet {DHCP_IP_SUBNET}.0 netmask 255.255.255.0 {{
 }}
 host intended_client_vm {{
   hardware ethernet {CLIENT_MAC_ADDRESS};
+  option dhcp-client-identifier "{UNIQUE_CLIENT_ID}";
 }}
 EOF
 """

@@ -8,8 +8,9 @@ from libs.net.traffic_generator import TcpServer, is_tcp_connection
 from libs.net.traffic_generator import VMTcpClient as TcpClient
 from libs.net.vmspec import lookup_iface_status, lookup_primary_network
 from libs.vm import affinity
+from tests.network.libs.ip import random_ipv4_address
 from tests.network.libs.vm_factory import udn_vm
-from utilities.constants import PUBLIC_DNS_SERVER_IP, QUARANTINED, TIMEOUT_1MIN
+from utilities.constants import PUBLIC_DNS_SERVER_IP, TIMEOUT_1MIN
 from utilities.infra import create_ns
 from utilities.virt import migrate_vm_and_verify
 
@@ -32,7 +33,7 @@ def namespaced_layer2_user_defined_network(udn_namespace):
         name="layer2-udn",
         namespace=udn_namespace.name,
         role="Primary",
-        subnets=["10.10.0.0/24"],
+        subnets=[f"{random_ipv4_address(net_seed=0, host_address=0)}/24"],
         ipam={"lifecycle": "Persistent"},
     ) as udn:
         udn.wait_for_condition(
@@ -48,16 +49,26 @@ def udn_affinity_label():
 
 
 @pytest.fixture(scope="class")
-def vma_udn(udn_namespace, namespaced_layer2_user_defined_network, udn_affinity_label):
-    with udn_vm(namespace_name=udn_namespace.name, name="vma-udn", template_labels=dict((udn_affinity_label,))) as vm:
+def vma_udn(udn_namespace, namespaced_layer2_user_defined_network, udn_affinity_label, admin_client):
+    with udn_vm(
+        namespace_name=udn_namespace.name,
+        name="vma-udn",
+        client=admin_client,
+        template_labels=dict((udn_affinity_label,)),
+    ) as vm:
         vm.start(wait=True)
         vm.wait_for_agent_connected()
         yield vm
 
 
 @pytest.fixture(scope="class")
-def vmb_udn(udn_namespace, namespaced_layer2_user_defined_network, udn_affinity_label):
-    with udn_vm(namespace_name=udn_namespace.name, name="vmb-udn", template_labels=dict((udn_affinity_label,))) as vm:
+def vmb_udn(udn_namespace, namespaced_layer2_user_defined_network, udn_affinity_label, admin_client):
+    with udn_vm(
+        namespace_name=udn_namespace.name,
+        name="vmb-udn",
+        client=admin_client,
+        template_labels=dict((udn_affinity_label,)),
+    ) as vm:
         vm.start(wait=True)
         vm.wait_for_agent_connected()
         yield vm
@@ -124,10 +135,6 @@ class TestPrimaryUdn:
     @pytest.mark.polarion("CNV-11427")
     @pytest.mark.single_nic
     @pytest.mark.gating
-    @pytest.mark.xfail(
-        reason=f"{QUARANTINED}: Flaky test, fails on connecting to VM console; tracked in CNV-67470",
-        run=False,
-    )
     def test_connectivity_is_preserved_during_client_live_migration(self, server, client):
         migrate_vm_and_verify(vm=client.vm)
         assert is_tcp_connection(server=server, client=client)

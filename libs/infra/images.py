@@ -72,6 +72,7 @@ class Windows:
     ISO_WIN11_DIR: str = f"{ISO_BASE_DIR}/win11"
     ISO_WIN2022_DIR: str = f"{ISO_BASE_DIR}/win2022"
     ISO_WIN2025_DIR: str = f"{ISO_BASE_DIR}/win2025"
+    CONTAINER_DISK_DV_SIZE = "40Gi"
     DEFAULT_DV_SIZE: str = "70Gi"
     DEFAULT_MEMORY_SIZE: str = "8Gi"
     DEFAULT_MEMORY_SIZE_WSL: str = "12Gi"
@@ -82,8 +83,8 @@ class Windows:
 
 @dataclass
 class Fedora:
-    FEDORA41_IMG: str | None = None
     FEDORA42_IMG: str | None = None
+    FEDORA43_IMG: str | None = None
     FEDORA_CONTAINER_IMAGE: str | None = None
     DISK_DEMO: str | None = None
     DIR: str = f"{BASE_IMAGES_DIR}/fedora-images"

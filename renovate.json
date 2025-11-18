@@ -7,8 +7,7 @@
     ":semanticCommitTypeAll(ci)"
   ],
   "baseBranches": [
-    "main",
-    "cnv-4.99"
+    "main"
   ],
   "prConcurrentLimit": 0,
   "lockFileMaintenance": {
@@ -21,9 +20,12 @@
       "groupName": "python-deps"
     },
     {
-      "matchManagers": ["pep621"],
-      "matchPackageNames": ["python"],
-      "matchUpdateTypes": ["major"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["quay.io/fedora/fedora"],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": ["marshmallow"],
       "enabled": false
     }
   ]
