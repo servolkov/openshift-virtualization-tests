@@ -1,7 +1,7 @@
 name: Promote net utility image to latest
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - 'closed'
     branches:
@@ -11,9 +11,12 @@ on:
 
 jobs:
   promote-to-latest:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
+    # safe to use pull_request_target because we only run this for trusted collaborators
+    if: |
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) ||
+      github.event.pull_request.merged == true
     steps:
       - name: Install skopeo
         run: |

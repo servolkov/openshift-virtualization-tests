@@ -1,7 +1,7 @@
 name: Build and push net utility staging image
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - 'main'
     paths:
@@ -14,6 +14,8 @@ jobs:
     permissions:
       pull-requests: write
 
+    # safe to use pull_request_target because we only run this for trusted collaborators
+    if: contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -52,8 +54,6 @@ jobs:
           registry: quay.io
 
       - name: Push manifest
-        # Only run for PRs from the same repo (not forks)
-#        if: github.event.pull_request.head.repo.full_name == github.repository
         run: |
           podman manifest push ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
