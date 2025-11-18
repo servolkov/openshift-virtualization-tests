@@ -11,6 +11,7 @@ jobs:
   build-and-push-staging:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write
 
     # safe to use pull_request_target because we only run this for trusted collaborators
