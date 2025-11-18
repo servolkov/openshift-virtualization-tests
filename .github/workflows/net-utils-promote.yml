@@ -38,3 +38,8 @@ jobs:
             --all \
             docker://${IMAGE_NAME}:staging \
             docker://$${IMAGE_NAME}:latest
+
+      - name: Comment on PR for promotion
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: The net-utils image has been promoted to `latest` tag on quay.io.

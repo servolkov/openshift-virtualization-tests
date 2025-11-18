@@ -62,5 +62,4 @@ jobs:
         uses: mshick/add-pr-comment@v2
         with:
           message: |
-            Staging image built and pushed to:
-            `${{ steps.image-tag.outputs.IMAGE_TAG }}`
+            Staging image built and pushed to: `${{ steps.image-tag.outputs.IMAGE_TAG }}`
