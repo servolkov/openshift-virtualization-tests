@@ -37,7 +37,7 @@ jobs:
           skopeo copy \
             --all \
             docker://${IMAGE_NAME}:staging \
-            docker://$${IMAGE_NAME}:latest
+            docker://${IMAGE_NAME}:latest
 
       - name: Comment on PR for promotion
         uses: mshick/add-pr-comment@v2
