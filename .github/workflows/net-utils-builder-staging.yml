@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
     paths:
-      - 'containers/utility/DockerFile'
+      - 'containers/utility/Dockerfile'
 
 jobs:
   build-and-push-staging:
@@ -29,7 +29,6 @@ jobs:
       - name: Define image tag
         id: image-tag
         run: |
-#          IMAGE_NAME="quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
           IMAGE_NAME="quay.io/sevolkov/net-utils"
           TAG="staging"
           echo "IMAGE_TAG=${IMAGE_NAME}:${TAG}" >> $GITHUB_OUTPUT
