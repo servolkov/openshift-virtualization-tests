@@ -2,7 +2,8 @@ name: Build and push net utility staging image
 
 on:
   pull_request:
-    branches: ["main"]
+    branches:
+      - 'main'
     paths:
       - 'containers/utility/DockerFile'
 
@@ -20,7 +21,7 @@ jobs:
       - name: Set up QEMU for multi-arch builds
         uses: docker/setup-qemu-action@v3
 
-      - name: Install Podman
+      - name: Install podman
         run: |
           sudo apt-get update
           sudo apt-get install -y podman

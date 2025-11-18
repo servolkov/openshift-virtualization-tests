@@ -1,13 +1,17 @@
 name: Promote net utility image to latest
 
 on:
-  push:
-    branches: ["main"]
+  pull_request:
+    types:
+      - 'closed'
+    branches:
+      - 'main'
     paths:
       - 'containers/utility/DockerFile'
 
 jobs:
   promote-to-latest:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
