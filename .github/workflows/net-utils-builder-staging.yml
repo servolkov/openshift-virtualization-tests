@@ -34,7 +34,7 @@ jobs:
       - name: Define image tag
         id: image-tag
         run: |
-          IMAGE_NAME="quay.io/openshift-cnv/qe-cnv-tests-net-util-container"
+          IMAGE_NAME="quay.io/openshift-cnv/qe-net-utils"
           TAG="staging"
           echo "IMAGE_TAG=${IMAGE_NAME}:${TAG}" >> $GITHUB_OUTPUT
 
