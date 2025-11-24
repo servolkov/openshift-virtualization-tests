@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
       - 'main'
+      - '2'
     paths:
       - 'containers/utility/Dockerfile'
 
@@ -15,7 +16,7 @@ jobs:
       pull-requests: write
 
     # safe to use pull_request_target because we only run this for trusted collaborators
-    if: contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+    if: contains(fromJson('["COLLABORATOR"]'), github.event.pull_request.author_association)
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
