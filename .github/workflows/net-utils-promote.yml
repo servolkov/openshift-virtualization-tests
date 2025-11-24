@@ -30,7 +30,7 @@ jobs:
         uses: redhat-actions/podman-login@v1
         with:
           username: ${{ secrets.QUAY_USER }}
-          password: ${{ secrets.QUAY_PASSWORD }}
+          password: ${{ secrets.QUAY_TOKEN }}
           registry: quay.io
 
       - name: Promote manifest (staging -> latest)
