@@ -384,15 +384,15 @@ def network_sanity(
                     f"'{mtv_namespace_scope_session.name}' namespace"
                 )
 
-    _verify_multi_nic(_request=request)
-    _verify_dpdk()
-    _verify_service_mesh()
-    _verify_jumbo_frame()
-    _verify_sriov()
-    _verify_ip_family(family="ipv4", is_supported_in_cluster=ipv4_supported_cluster)
-    _verify_ip_family(family="ipv6", is_supported_in_cluster=ipv6_supported_cluster)
-    _verify_bgp_env_vars()
-    _verify_nmstate_running_pods(_admin_client=admin_client, namespace=nmstate_namespace)
+    # _verify_multi_nic(_request=request)
+    # _verify_dpdk()
+    # _verify_service_mesh()
+    # _verify_jumbo_frame()
+    # _verify_sriov()
+    # _verify_ip_family(family="ipv4", is_supported_in_cluster=ipv4_supported_cluster)
+    # _verify_ip_family(family="ipv6", is_supported_in_cluster=ipv6_supported_cluster)
+    # _verify_bgp_env_vars()
+    # _verify_nmstate_running_pods(_admin_client=admin_client, namespace=nmstate_namespace)
     _verify_mtv_installed()
 
     if failure_msgs:

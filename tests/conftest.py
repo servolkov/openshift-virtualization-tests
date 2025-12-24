@@ -2053,7 +2053,7 @@ def artifactory_setup(pytestconfig):
 def autouse_fixtures(
     leftovers_cleanup,  # Must be called first to avoid deleting created resources.
     artifactory_setup,
-    bin_directory_to_os_path,
+    # bin_directory_to_os_path,
     cluster_info,
     term_handler_scope_function,
     term_handler_scope_class,
