@@ -71,6 +71,7 @@ class Disk:
 @dataclass
 class Interface:
     name: str
+    macAddress: str | None = None  # noqa: N815
     masquerade: dict[Any, Any] | None = None
     bridge: dict[Any, Any] | None = None
     sriov: dict[Any, Any] | None = None

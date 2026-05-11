@@ -11,11 +11,14 @@ from ocp_resources.node import Node
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.vtep import VTEP
 
-from libs.net.ip import random_ipv4_address, random_ipv6_address
+from libs.net.ip import random_ipv4_address
 from libs.net.traffic_generator import TcpServer
-from libs.net.udn import UDN_BINDING_DEFAULT_PLUGIN_NAME, create_udn_namespace
+from libs.net.udn import UDN_BINDING_DEFAULT_PLUGIN_NAME, create_udn_namespace, udn_primary_network
+from libs.vm.factory import base_vmspec, fedora_vm
+from libs.vm.spec import Devices
 from libs.vm.vm import BaseVirtualMachine
 from tests.network.bgp.evpn.libevpn import (
+    CUDN_EVPN_SUBNET_IPV6,
     EndpointTcpClient,
     EvpnEndpoint,
     cudn_evpn_subnets,
@@ -42,7 +45,10 @@ EVPN_ADVERTISE_LABEL: Final[dict] = {"advertise": "evpn"}
 APP_EVPN_CUDN_LABEL: Final[dict] = {**EVPN_ADVERTISE_LABEL, "app": "cudn-evpn"}
 CUDN_EVPN_BGP_LABEL: Final[dict] = {"cudn-bgp": "evpn"}
 EXTERNAL_L2_ENDPOINT_IPV4: Final[str] = f"{random_ipv4_address(net_seed=5, host_address=250)}/24"
-EXTERNAL_L2_ENDPOINT_IPV6: Final[str] = f"{random_ipv6_address(net_seed=5, host_address=250)}/64"
+EXTERNAL_L2_ENDPOINT_IPV6: Final[str] = (
+    f"{ipaddress.ip_network(CUDN_EVPN_SUBNET_IPV6, strict=False).network_address + 250}/64"
+)
+EXTERNAL_L2_ENDPOINT_MAC: Final[str] = "02:00:05:00:fa:00"
 EXTERNAL_L3_ENDPOINT_IPV4: Final[str] = "192.168.100.100/24"
 EXTERNAL_L3_ENDPOINT_IPV6: Final[str] = "fd01:1234:5678::64/64"
 EXTERNAL_L3_GATEWAY_IPV4: Final[str] = "192.168.100.1/24"
@@ -233,6 +239,7 @@ def external_l2_endpoint(
         pod=frr_external_pod.pod,
         vni=EVPN_MAC_VRF_VNI,
         endpoint_ips=[EXTERNAL_L2_ENDPOINT_IPV4, EXTERNAL_L2_ENDPOINT_IPV6],
+        mac_address=EXTERNAL_L2_ENDPOINT_MAC,
     )
     yield endpoint
     teardown_evpn_l2_endpoint(pod=frr_external_pod.pod, vni=EVPN_MAC_VRF_VNI)
@@ -269,3 +276,25 @@ def evpn_routed_l3_active_connections(
 ) -> Generator[list[tuple[EndpointTcpClient, TcpServer]]]:
     with evpn_workloads_active_connections(endpoint=external_l3_endpoint, vm=vm_evpn_target) as connections:
         yield connections
+
+
+@pytest.fixture()
+def vm_source_provider(
+    external_l2_endpoint: EvpnEndpoint,
+    namespace_evpn: Namespace,
+    cudn_evpn_layer2: libcudn.ClusterUserDefinedNetwork,
+    admin_client: DynamicClient,
+) -> Generator[BaseVirtualMachine]:
+    spec = base_vmspec()
+    iface, network = udn_primary_network(name="udn-primary", binding=UDN_BINDING_DEFAULT_PLUGIN_NAME)
+    iface.macAddress = external_l2_endpoint.mac_address
+    spec.template.spec.domain.devices = Devices(interfaces=[iface])
+    spec.template.spec.networks = [network]
+
+    with fedora_vm(namespace=namespace_evpn.name, name="vm-source-provider", client=admin_client, spec=spec) as vm:
+        vm.update_template_annotations(
+            template_annotations={
+                "network.kubevirt.io/addresses": json.dumps({"udn-primary": external_l2_endpoint.ip_addresses})
+            }
+        )
+        yield vm
