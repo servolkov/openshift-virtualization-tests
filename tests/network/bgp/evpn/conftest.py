@@ -11,6 +11,7 @@ from ocp_resources.namespace import Namespace
 from ocp_resources.node import Node
 from ocp_resources.resource import ResourceEditor
 from ocp_resources.vtep import VTEP
+from utilities.constants.hco import DEFAULT_RESOURCE_CONDITIONS
 
 from libs.net.ip import random_ipv4_address
 from libs.net.traffic_generator import TcpServer
@@ -46,7 +47,6 @@ from tests.network.libs.bgp import (
 )
 from tests.network.libs.label_selector import LabelSelector
 from tests.network.libs.vm_factory import udn_vm
-from utilities.constants.hco import DEFAULT_RESOURCE_CONDITIONS
 from utilities.infra import wait_for_consistent_resource_conditions
 
 EVPN_ADVERTISE_LABEL: Final[dict] = {"advertise": "evpn"}
