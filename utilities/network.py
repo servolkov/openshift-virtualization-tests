@@ -28,7 +28,7 @@ from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
 import utilities.infra
 from libs.net.ip import ICMP_HEADER_SIZE, ip_header_size
-from libs.net.vmspec import IpNotFound, VMInterfaceStatusNotFoundError, lookup_iface_status_ip
+from libs.net.vmspec import IpNotFoundError, VMInterfaceStatusNotFoundError, lookup_iface_status_ip
 from utilities.constants import (
     ACTIVE_BACKUP,
     FLAT_OVERLAY_STR,
@@ -51,10 +51,6 @@ OVS_DS_NAME = "ovs-cni-amd64"
 DEPLOY_OVS = "deployOVS"
 BOND = "bond"
 INPROGRESS = "InProgress"
-
-
-class SriovIfaceNotFound(Exception):
-    pass
 
 
 class BridgeNodeNetworkConfigurationPolicy(NodeNetworkConfigurationPolicy):
@@ -657,7 +653,7 @@ def get_vmi_mac_address_by_iface_name(vmi, iface_name):
     for iface in vmi.interfaces:
         if iface.name == iface_name:
             return iface.mac
-    raise VMInterfaceStatusNotFoundError(f"Interface {iface_name} not found in VMI {vmi.name} status")
+    raise VMInterfaceStatusNotFoundError(vm_name=vmi.name, interface_name=iface_name)
 
 
 def cloud_init_network_data(data):
@@ -757,7 +753,7 @@ def get_ip_from_vm_or_virt_handler_pod(family, vm=None, virt_handler_pod=None):
         ip_family = 4 if family == IPV4_STR else 6
         try:
             ip = lookup_iface_status_ip(vm=vm, iface_name=iface_name, ip_family=ip_family)
-        except IpNotFound:
+        except IpNotFoundError:
             return None
         return str(ip) if ip else None
 

@@ -3,10 +3,13 @@ import json
 import logging
 from typing import Final
 
-from libs.net.vmspec import IpNotFound
 from libs.vm.vm import BaseVirtualMachine
 
 LOGGER = logging.getLogger(__name__)
+
+
+class GuestInterfaceIpNotFoundError(Exception):
+    pass
 
 
 def ip_address_annotation(
@@ -43,7 +46,7 @@ def read_guest_interface_ipv4(
         IPv4 address with prefix length (e.g., 192.168.1.5/24).
 
     Raises:
-        IpNotFound: If no IPv4 address is found on the specified interface.
+        GuestInterfaceIpNotFoundError: If no IPv4 address is found on the specified interface.
     """
     cmd: Final[str] = f"ip -j -4 addr show {interface_name}"
     out = vm.console(commands=[cmd], timeout=10)
@@ -58,4 +61,4 @@ def read_guest_interface_ipv4(
                 prefix_len = addr["prefixlen"]
                 return ipaddress.IPv4Interface(address=f"{ip_str}/{prefix_len}")
 
-    raise IpNotFound(f"No IPv4 address found on {interface_name}")
+    raise GuestInterfaceIpNotFoundError(f"No IPv4 address found on {interface_name}")

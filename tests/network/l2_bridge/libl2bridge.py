@@ -247,7 +247,7 @@ def get_guest_vm_interface_name_by_vmi_interface_name(vm, vm_interface_name):
     for interface in vmi_interfaces:
         if interface["name"] == vm_interface_name:
             return interface["interfaceName"]
-    raise VMInterfaceStatusNotFoundError(f"Interface {vm_interface_name} not found in VM {vm.name} status")
+    raise VMInterfaceStatusNotFoundError(vm_name=vm.name, interface_name=vm_interface_name)
 
 
 @contextlib.contextmanager
@@ -290,7 +290,7 @@ def search_hot_plugged_interface_in_vmi(vm, interface_name):
     try:
         return wait_for_interface_hot_plug_completion(vmi=vm.vmi, interface_name=interface_name)
     except TimeoutExpiredError:
-        raise VMInterfaceStatusNotFoundError(f"Interface {interface_name} not found in VM {vm.name} status")
+        raise VMInterfaceStatusNotFoundError(vm_name=vm.name, interface_name=interface_name)
 
 
 def get_kubemacpool_controller_log(
